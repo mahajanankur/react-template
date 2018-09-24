@@ -29,6 +29,7 @@ class Dashboard extends React.Component {
           tags: this.props.tags
         });
     });
+    console.log("In componentWillMount ", this.state.tags);
   }
 
   render() {
@@ -53,7 +54,6 @@ class Dashboard extends React.Component {
         <h1 className="mb-lg">Dashboard</h1>
         <Row>
           <Col sm={6}>
-            <p>Unique Tags {this.state.tags}</p>
             <Widget title={
               <div>
                 <div className="pull-right mt-n-xs">
@@ -137,6 +137,12 @@ class Dashboard extends React.Component {
                 </div>
                 <h5 className="mt-0 mb-0">Recent posts <Badge bsStyle="success" className="ml-xs">5</Badge></h5>
                 <p className="fs-sm mb-0 text-muted">posts, that have been published recently</p>
+                <ul>
+                  {this.state.tags && this.state.tags.map((tag, index) => (
+                    <li key={index}>{tag}</li>
+                  ))} 
+                </ul>
+                
               </div>
             }>
               <table className="table table-sm table-no-border mb-0">

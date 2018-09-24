@@ -17,6 +17,7 @@ import App from './components/App';
 import createFetch from './createFetch';
 import configureStore from './store/configureStore';
 import { ErrorReporter, deepForceUpdate } from './devUtils';
+import theme from './styles/theme.scss';
 
 // eslint-disable-next-line no-underscore-dangle
 theme._insertCss();

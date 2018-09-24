@@ -43,14 +43,11 @@ export function fetchUniqueTags() {
       .then(response =>
         response.json().then(response => ({ tags: response.data, response })),
       ).then(({ tags, response }) => {
-        console.log("Inside ");
-        if (!response.status) {
+        if (!response.success) {
           // If there was a problem, we want to
           // dispatch the error condition
-          dispatch(fetchTagsError(tags.message));
+          dispatch(fetchTagsError(response.message));
           return Promise.reject(tags);
-        }else{
-          console.log("Tags" + response.data)
         }
         // Dispatch the success action
         dispatch(fetchTagsSuccess(tags));
