@@ -1,12 +1,13 @@
 import React from 'react';
 import withStyles from 'isomorphic-style-loader/lib/withStyles';
-import { Button, ButtonGroup, ButtonToolbar, DropdownButton, MenuItem, ProgressBar,
-  Alert, Row, Col, ListGroup, Badge, Glyphicon } from 'react-bootstrap';
+import { Row, Col, Form, FormGroup, FormControl, Button, ControlLabel,
+         Alert, Glyphicon, ButtonGroup, DropdownButton, MenuItem } from 'react-bootstrap';
+import Select from 'react-select';
 import { Link } from 'react-router-dom';
 import { connect } from 'react-redux';
 import  EventCalendar from 'react-event-calendar';
 import Widget from '../../components/Widget';
-import { fetchUniqueTags } from '../../actions/ted';
+import { fetchUniqueTags, fetchTedByTagName, fetchProducts } from '../../actions/ted';
 
 import s from './Dashboard.scss';
 
@@ -15,196 +16,200 @@ class Dashboard extends React.Component {
     super(props);
 
     this.state = {
-      isFetching: true,
-      alert1Visible: true,
-      alert2Visible: true,
-      alert3Visible: true,
-      alert4Visible: true,
+      page: 0, 
+      size: 10,
+      sortByDate: false,
+      sortByViews: false
     };
   }
 
   componentWillMount() {
+ 
     this.props.dispatch(fetchUniqueTags()).then(() => {
         this.setState({
           tags: this.props.tags
         });
     });
-    console.log("In componentWillMount ", this.state.tags);
+
+    this.props.dispatch(fetchProducts()).then(() => {
+        this.setState({
+          prod: this.props.prod
+        });
+    });
+  }
+
+  submitTags(event){
+    this.props.dispatch(fetchTedByTagName(
+        {
+          sortByDate: this.state.sortByDate,
+          sortByViews: this.state.sortByViews,
+          page: this.state.page,
+          size: this.state.size,
+          tag: this.state.selectedTag
+        }
+      )).then(() => {
+        this.setState({
+          teds: this.props.teds
+        });
+    });
+    event.preventDefault();
+  }
+
+  changeTags = (selected) => {
+    console.log("Selected : ", selected.value);
+    this.setState({ selectedTag : selected.value});
+  }
+
+  formatTags(data){
+    var tagData = [];
+    if (data) {
+      for (var i = 0; i < data.length; i++) {
+        var id = data[i];
+        var name = data[i];
+        var map = { value: id, label: name };
+        tagData.push(map);
+      }
+    }
+    return tagData;
+  }
+
+  formatProduct(data){
+    var prodData = [];
+    if (data) {
+      for (var i = 0; i < data.length; i++) {
+        var productId = data[i].product_id;
+        for (var j = 0; j < productId.length; j++) {
+          var name = productId[j].value;
+          var id = productId[j].value;
+          var map = { value: id, label: name };
+          prodData.push(map);
+        }
+        
+      }
+    }
+    console.log("PROD Data : ", prodData);
+    return prodData;
   }
 
   render() {
-    const events = [
-    {
-        start: '2015-07-20',
-        end: '2015-07-02',
-        eventClasses: 'optionalEvent',
-        title: 'test event',
-        description: 'This is a test description of an event',
-    },
-    {
-        start: '2015-07-19',
-        end: '2015-07-25',
-        title: 'test event',
-        description: 'This is a test description of an event',
-        data: 'you can add what ever random data you may want to use later',
-    },
-    ];
     return (
       <div className={s.root}>
-        <h1 className="mb-lg">Dashboard</h1>
+        <h1 className="mb-lg">Ted Dashboard</h1>
         <Row>
-          <Col sm={6}>
+          <Col sm={12}>
+            <Widget title={
+              <div>
+                <h5 className="mt-0"><Glyphicon glyph="search" className="mr-xs opacity-70"/>Teds</h5>
+              </div>
+            }>
+              <Form horizontal onSubmit={this.submitTags.bind(this)}>
+              {
+                this.props.message && (
+                  <Alert className="alert-sm" bsStyle="info">
+                    {this.props.message}
+                  </Alert>
+                )
+              }
+                <FormGroup controlId="formHorizontal">
+                  <Col componentClass={ControlLabel} sm={1}>
+                    Tags
+                  </Col>
+                  <Col sm={6}>
+                  <Select
+                       options={this.formatTags(this.state.tags)}
+                       className="basic-select"
+                       classNamePrefix="select"
+                       onChange={this.changeTags}/>
+                  </Col>
+                  
+                </FormGroup>
+              
+                <FormGroup controlId="formHorizontal">
+                  <Col componentClass={ControlLabel} sm={1}>
+                    Products
+                  </Col>
+                  <Col sm={6}>
+                  <Select
+                       options={this.formatProduct(this.state.prod)}
+                       className="basic-select"
+                       classNamePrefix="select"
+                       onChange={this.changeTags}/>
+                  </Col>
+                  
+                </FormGroup>
+
+                <FormGroup>
+                  <Col smOffset={2} sm={10}>
+                    <div className="btn-toolbar pull-right">
+                      <Button>
+                        Cancel
+                      </Button>
+                      <Button bsStyle="danger" type="submit">
+                        {this.props.isFetching ? 'Searching...' : 'Submit'}
+                      </Button>
+                    </div>
+                  </Col>
+                </FormGroup>
+              </Form>
+            </Widget>
+          </Col>
+        </Row>
+
+
+        <Row>
+          <Col sm={12}>
             <Widget title={
               <div>
                 <div className="pull-right mt-n-xs">
                   <input type="search" placeholder="Search..." className="form-control input-sm" />
                 </div>
-                <h5 className="mt-0"><Glyphicon glyph="user" className="mr-xs opacity-70"/> Users</h5>
+                <h5 className="mt-0"><Glyphicon glyph="user" className="mr-xs opacity-70"/> Teds</h5>
               </div>
             }>
               <table className="table mb-0">
                 <thead>
                 <tr>
-                  <th>ID</th>
-                  <th>Username</th>
-                  <th>Email</th>
-                  <th>Status</th>
+                  <th>Name</th>
+                  <th>Description</th>
+                  <th>Event</th>
+                  <th>Speaker</th>
+                  <th>Title</th>
+                  <th>Views</th>
+                  <th>URL</th>
                 </tr>
                 </thead>
-                <tbody>
-                <tr>
-                  <td>1</td>
-                  <td>Alice</td>
-                  <td>alice@email.com</td>
-                  <td><span className="label label-success">active</span></td>
-                </tr>
-                <tr>
-                  <td>2</td>
-                  <td>Bob</td>
-                  <td>bob@email.com</td>
-                  <td><span className="label label-warning text-default">delayed</span></td>
-                </tr>
-                <tr>
-                  <td>3</td>
-                  <td>Duck</td>
-                  <td>duck@email.com</td>
-                  <td><span className="label label-success">active</span></td>
-                </tr>
-                <tr>
-                  <td>4</td>
-                  <td>Shepherd</td>
-                  <td>shepherd@email.com</td>
-                  <td><span className="label bg-dark">removed</span></td>
-                </tr>
-                </tbody>
-              </table>
-            </Widget>
-          </Col>
-          <Col sm={6}>
-            { this.state.alert1Visible &&
-              <Alert className="alert-sm" bsStyle="warning" onDismiss={() => this.setState({ alert1Visible: false })}>
-                <span className="fw-semi-bold">Warning:</span> Best check yo self, you&#39;re not looking too good.
-              </Alert>
-            }
-            { this.state.alert2Visible &&
-            <Alert className="alert-sm" bsStyle="success" onDismiss={() => this.setState({ alert2Visible: false })}>
-              <span className="fw-semi-bold">Success:</span> You successfully read this important alert message.
-            </Alert>
-            }
-            { this.state.alert3Visible &&
-            <Alert className="alert-sm" bsStyle="info" onDismiss={() => this.setState({ alert3Visible: false })}>
-              <span className="fw-semi-bold">Info:</span> This alert needs your attention, but it&#39;s not super important.
-            </Alert>
-            }
-            { this.state.alert4Visible &&
-            <Alert className="alert-sm clearfix" bsStyle="danger" onDismiss={() => this.setState({ alert4Visible: false })}>
-              <span className="fw-semi-bold">Danger:</span> Change this and that and try again.
-              <span className="pull-right">
-                <Button bsStyle="danger" bsSize="xsmall">Take this action</Button>
-                <span> or </span>
-                <Button bsSize="xsmall">Cancel</Button>
-              </span>
-            </Alert>
-            }
-          </Col>
-        </Row>
-        <Row>
-          <Col sm={6}>
-            <Widget title={
-              <div>
-                <div className="pull-right mt-n-xs">
-                  <a className="td-underline fs-sm">Options</a>
-                </div>
-                <h5 className="mt-0 mb-0">Recent posts <Badge bsStyle="success" className="ml-xs">5</Badge></h5>
-                <p className="fs-sm mb-0 text-muted">posts, that have been published recently</p>
-                <ul>
-                  {this.state.tags && this.state.tags.map((tag, index) => (
-                    <li key={index}>{tag}</li>
-                  ))} 
-                </ul>
                 
-              </div>
-            }>
-              <table className="table table-sm table-no-border mb-0">
                 <tbody>
-                {this.props.posts && this.props.posts.map((post, index) => (
-                  <tr key={post.id}>
-                    <td>{new Date(post.updatedAt).toLocaleString() }</td>
-                    <td><Link to="/app/posts">{post.title}</Link></td>
-                  </tr>
-                ))}
-                {this.props.posts && !this.props.posts.length &&
-                <tr>
-                  <td colSpan="100">No posts yet</td>
-                </tr>
-                }
-                {this.props.isFetching &&
-                <tr>
-                  <td colSpan="100">Loading...</td>
-                </tr>
-                }
+
+                  {this.state.teds && this.state.teds.map((ted, index) => (
+                    <tr key={ted.name}>
+                      <td>{ted.name}</td>
+                      <td>{ted.description}</td>
+                      <td>{ted.event}</td>
+                      <td>{ted.mainSpeaker}</td>
+                      <td>{ted.title}</td>
+                      <td>{ted.views}</td>
+                      <td><a href={ted.url}>URL</a></td>
+                    </tr>
+                  ))}
+                  {this.state.teds && !this.state.teds.length &&
+                    <tr>
+                      <td colSpan="100">No Teds are found.</td>
+                    </tr>
+                  }
+                  {this.props.isFetching &&
+                    <tr>
+                      <td colSpan="100">Loading...</td>
+                    </tr>
+                  }
                 </tbody>
               </table>
             </Widget>
           </Col>
           <Col sm={6}>
-            <ListGroup>
-              <Link to="/app" className="list-group-item"><Glyphicon glyph="phone" className="mr-xs opacity-70"/> Incoming calls <Badge bsStyle="danger">3</Badge></Link>
-              <Link to="/app" className="list-group-item"><Glyphicon glyph="bell" className="mr-xs opacity-70"/> Notifications <Badge bsStyle="warning">6</Badge></Link>
-              <Link to="/app" className="list-group-item"><Glyphicon glyph="comment" className="mr-xs opacity-70"/> Messages <Badge bsStyle="success">18</Badge></Link>
-              <Link to="/app" className="list-group-item"><Glyphicon glyph="eye-open" className="mr-xs opacity-70"/> Visits total</Link>
-              <Link to="/app" className="list-group-item"><Glyphicon glyph="cloud" className="mr-xs opacity-70"/> Inbox <Glyphicon glyph="chevron-right" className="opacity-70 pull-right"/></Link>
-            </ListGroup>
+            
           </Col>
         </Row>
-        <h3 className="mb">Some standard react-bootstrap components</h3>
-          <Row className="mb">
-            <Col sm={6}>
-              <ButtonToolbar className="mb">
-                <Button bsSize="small">Default</Button>
-                <Button bsSize="small" bsStyle="success">Success</Button>
-                <Button bsSize="small" bsStyle="info">Info</Button>
-                <Button bsSize="small" bsStyle="warning">Warning</Button>
-                <Button bsSize="small" bsStyle="inverse">Inverse</Button>
-              </ButtonToolbar>
-              <ButtonGroup className="mb">
-                <Button>1</Button>
-                <Button>2</Button>
-                <DropdownButton title="Dropdown" id="bg-nested-dropdown">
-                  <MenuItem eventKey="1">Dropdown link</MenuItem>
-                  <MenuItem eventKey="2">Dropdown link</MenuItem>
-                </DropdownButton>
-              </ButtonGroup>
-              <p>For more components please checkout <a href="https://react-bootstrap.github.io/components.html"
-                                                         target="_blank">react-bootstrap documentation</a></p>
-            </Col>
-            <Col sm={6}>
-              <ProgressBar className="progress-sm" bsStyle="success" now={40} />
-              <ProgressBar className="progress-sm" bsStyle="info" now={20} />
-              <ProgressBar className="progress-sm" bsStyle="warning" now={60} />
-              <ProgressBar className="progress-sm" bsStyle="danger" now={80} />
-            </Col>
-          </Row>
       </div>
     );
   }
@@ -214,6 +219,8 @@ function mapStateToProps(state) {
   return {
     isFetching: state.ted.isFetching,
     tags: state.ted.tags,
+    teds: state.ted.teds,
+    prod: state.ted.prod,
   };
 }
 
